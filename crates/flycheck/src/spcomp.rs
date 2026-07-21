@@ -92,11 +92,6 @@ pub fn build_args(
     linter_arguments: &[String],
 ) -> Vec<String> {
     let mut args = vec![root_path.to_string()];
-    args.extend(
-        includes_directories
-            .iter()
-            .map(|includes_directory| format!("-i{}", includes_directory)),
-    );
     if let Some(parent_path) = root_path.parent() {
         args.push(format!("-i{}", parent_path));
         let include_path = parent_path.join("include");
@@ -104,6 +99,11 @@ pub fn build_args(
             args.push(format!("-i{}", include_path));
         }
     }
+    args.extend(
+        includes_directories
+            .iter()
+            .map(|includes_directory| format!("-i{}", includes_directory)),
+    );
 
     args.push(format!("-o{}", out_path));
     args.push("--syntax-only".to_string());
