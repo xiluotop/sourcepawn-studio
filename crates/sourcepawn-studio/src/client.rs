@@ -77,8 +77,9 @@ impl LspClient {
             .pending
             .remove(&response.id)
             .expect("response with unknown request id received");
-        if response.result.is_none() {
-            // Ignore null responses, as they will be sent on a disconnected channel.
+        if response.result.is_none() && response.error.is_none() {
+            // Ignore null successful responses, as they will be sent on a disconnected channel.
+            // Error responses must still be forwarded, since they also have `result: None`.
             return Ok(());
         }
         log::debug!("Sending received response {:?}", response);

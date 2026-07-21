@@ -320,12 +320,16 @@ impl GlobalState {
                 let text = if file.exists() {
                     let bytes = vfs.file_contents(file.file_id).to_vec();
 
-                    String::from_utf8(bytes).ok().map(|text| {
-                        // FIXME: Consider doing normalization in the `vfs` instead? That allows
-                        // getting rid of some locking
-                        let (text, line_endings) = LineEndings::normalize(text);
-                        (Arc::from(text), line_endings)
-                    })
+                    // Files are decoded lossily rather than rejected outright on invalid UTF-8.
+                    // The file is still visible to `#include` resolution regardless (its bytes
+                    // exist in the `Vfs`), so silently skipping the `line_endings_map` entry here
+                    // (as a strict `String::from_utf8` would force us to) would desync the two
+                    // and panic later on, e.g. when resolving a goto-definition into this file.
+                    let text = String::from_utf8_lossy(&bytes).into_owned();
+                    // FIXME: Consider doing normalization in the `vfs` instead? That allows
+                    // getting rid of some locking
+                    let (text, line_endings) = LineEndings::normalize(text);
+                    Some((Arc::from(text), line_endings))
                 } else {
                     None
                 };
