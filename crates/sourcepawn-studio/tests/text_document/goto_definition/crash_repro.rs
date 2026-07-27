@@ -28,8 +28,11 @@ fn goto_definition_on_include_with_invalid_utf8_content() {
     // picked up by the background workspace file loader, not by
     // `textDocument/didOpen`.
     let foo_inc_path = test_bed.directory().join("foo.inc");
-    std::fs::write(&foo_inc_path, [b'i', b'n', b't', b' ', b'f', b'o', b'o', b';', 0xFF])
-        .unwrap();
+    std::fs::write(
+        &foo_inc_path,
+        [b'i', b'n', b't', b' ', b'f', b'o', b'o', b';', 0xFF],
+    )
+    .unwrap();
 
     test_bed
         .initialize(
