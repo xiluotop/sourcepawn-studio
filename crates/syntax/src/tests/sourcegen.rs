@@ -39,16 +39,24 @@ fn generate_node_kinds() {
         let kind_id: TokenStream = format!("{}", kind_id).parse().unwrap();
         quote! { #name = #kind_id }
     });
+    // tree-sitter reserves `u16::MAX` as the kind id of the built-in `ERROR` node.
+    // It is not part of the grammar's node kinds (i.e. outside of `0..node_kind_count`),
+    // so it needs its own variant to be transmuted safely from a `kind_id`.
+    let error_entry = quote! { anon_ERROR = 65535 };
     let stream = quote! {
         #![allow(bad_style, missing_docs, unreachable_pub, unused)]
         #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
         #[repr(u16)]
         pub enum TSKind {
-            #(#entries),*
+            #(#entries),*,
+            #error_entry,
         }
 
         impl From<tree_sitter::Node<'_>> for TSKind {
             fn from(v: tree_sitter::Node<'_>) -> Self {
+                if v.is_error() {
+                    return TSKind::anon_ERROR;
+                }
                 unsafe { ::std::mem::transmute(v.kind_id()) }
             }
         }

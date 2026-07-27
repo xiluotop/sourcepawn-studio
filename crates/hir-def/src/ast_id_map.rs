@@ -123,6 +123,9 @@ impl AstIdMap {
         let mut arena = Arena::default();
         let mut map = FxHashMap::default();
         bdfs(root_node, &mut |node: tree_sitter::Node<'_>| {
+            if node.is_error() || node.is_missing() {
+                return false;
+            }
             match TSKind::from(node) {
                 TSKind::source_file => (),
                 TSKind::global_variable_declaration
@@ -229,5 +232,31 @@ impl Index<AstId> for AstIdMap {
     type Output = NodePtr;
     fn index(&self, index: AstId) -> &Self::Output {
         &self.arena[index.raw]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn parse(text: &str) -> tree_sitter::Tree {
+        let mut parser = tree_sitter::Parser::new();
+        parser
+            .set_language(&tree_sitter_sourcepawn::language())
+            .expect("Failed to set language");
+        parser.parse(text, None).expect("Failed to parse")
+    }
+
+    /// Regression test for a crash where a transient parser `ERROR` node
+    /// (kind id `u16::MAX`) was fed into `TSKind::from`, which used to
+    /// blindly `transmute` the id and panic on any value not covered by
+    /// the grammar's node kinds.
+    #[test]
+    fn from_source_does_not_panic_on_error_node() {
+        let text = "#include <tf2items";
+        let tree = parse(text);
+        assert!(tree.root_node().has_error());
+
+        let _ = AstIdMap::from_source(&tree.root_node());
     }
 }

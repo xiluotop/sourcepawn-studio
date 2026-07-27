@@ -275,9 +275,13 @@ pub enum TSKind {
     anon_call_arguments_repeat1_ = 270,
     anon_array_literal_repeat1_ = 271,
     anon_string_literal_repeat1_ = 272,
+    anon_ERROR = 65535,
 }
 impl From<tree_sitter::Node<'_>> for TSKind {
     fn from(v: tree_sitter::Node<'_>) -> Self {
+        if v.is_error() {
+            return TSKind::anon_ERROR;
+        }
         unsafe { ::std::mem::transmute(v.kind_id()) }
     }
 }

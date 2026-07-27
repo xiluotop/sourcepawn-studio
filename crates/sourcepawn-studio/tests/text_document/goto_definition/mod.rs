@@ -2,6 +2,7 @@ use insta::assert_json_snapshot;
 use sourcepawn_studio::fixture::goto_definition;
 
 mod arrays;
+mod crash_repro;
 mod enum_structs;
 mod enums;
 mod function_declarations;
