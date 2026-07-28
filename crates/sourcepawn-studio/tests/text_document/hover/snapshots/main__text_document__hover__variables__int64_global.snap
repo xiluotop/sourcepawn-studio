@@ -1,0 +1,22 @@
+---
+source: crates/sourcepawn-studio/tests/text_document/hover/variables.rs
+assertion_line: 18
+expression: "hover(r#\"\n%! main.sp\nint64 largeValue = 2147483648;\n        |\n        ^\n\"#)"
+---
+{
+  "contents": {
+    "kind": "markdown",
+    "value": "```sourcepawn\nint64 largeValue;\n```"
+  },
+  "range": {
+    "start": {
+      "line": 0,
+      "character": 6
+    },
+    "end": {
+      "line": 0,
+      "character": 16
+    }
+  },
+  "actions": []
+}

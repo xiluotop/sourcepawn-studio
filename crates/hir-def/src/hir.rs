@@ -139,6 +139,7 @@ pub enum Literal {
     Char(char),
     Bool(bool),
     Int(i64),
+    Int64(i64),
     Null,
     // Here we are using a wrapper around float because f32 and f64 do not implement Eq, so they
     // could not be used directly here, to understand how the wrapper works go to definition of

@@ -16,6 +16,9 @@ pub enum TypeRef {
     /// int
     Int,
 
+    /// int64
+    Int64,
+
     /// bool
     Bool,
 
@@ -43,6 +46,14 @@ pub enum TypeRef {
 
 impl TypeRef {
     pub fn from_node(node: &Node, source: &str) -> Self {
+        // tree-sitter-sourcepawn does not expose `int64` as a builtin type yet,
+        // so it is currently parsed as an identifier. Keep this text check even
+        // after the grammar catches up so projects can update the grammar
+        // independently without changing the HIR representation.
+        if node.utf8_text(source.as_bytes()).unwrap_or_default() == "int64" {
+            return Self::Int64;
+        }
+
         match TSKind::from(node) {
             TSKind::anon_int => Self::Int,
             TSKind::anon_bool => Self::Bool,
@@ -108,6 +119,7 @@ impl fmt::Display for TypeRef {
             TypeRef::Name(name) => String::from(name.clone()), //TODO: Can we avoid this clone?
             TypeRef::OldName(name) => format!("{}:", name),
             TypeRef::Int => "int".to_string(),
+            TypeRef::Int64 => "int64".to_string(),
             TypeRef::Bool => "bool".to_string(),
             TypeRef::Float => "float".to_string(),
             TypeRef::Char => "char".to_string(),
@@ -134,6 +146,7 @@ impl TypeRef {
             TypeRef::Name(name) => name.to_string(),
             TypeRef::OldName(name) => name.to_string(),
             TypeRef::Int => "int".to_string(),
+            TypeRef::Int64 => "int64".to_string(),
             TypeRef::Bool => "bool".to_string(),
             TypeRef::Float => "float".to_string(),
             TypeRef::Char => "char".to_string(),
@@ -148,4 +161,43 @@ impl TypeRef {
 
 pub fn type_string_from_node(node: &Node, source: &str) -> String {
     TypeRef::from_node(node, source).type_as_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::TypeRef;
+
+    fn parse_first_item(source: &str) -> tree_sitter::Tree {
+        let mut parser = tree_sitter::Parser::new();
+        parser
+            .set_language(&tree_sitter_sourcepawn::language())
+            .expect("Failed to set SourcePawn language");
+        parser.parse(source, None).expect("Failed to parse source")
+    }
+
+    #[test]
+    fn recognizes_int64_variable_type() {
+        let source = "int64 value = 2147483648;";
+        let tree = parse_first_item(source);
+        let item = tree.root_node().named_child(0).expect("Missing item");
+
+        assert!(!item.has_error());
+        assert_eq!(
+            TypeRef::from_returntype_node(&item, "type", source),
+            Some(TypeRef::Int64)
+        );
+    }
+
+    #[test]
+    fn recognizes_int64_function_return_type() {
+        let source = "int64 get_value() { return 2147483648; }";
+        let tree = parse_first_item(source);
+        let item = tree.root_node().named_child(0).expect("Missing item");
+
+        assert!(!item.has_error());
+        assert_eq!(
+            TypeRef::from_returntype_node(&item, "returnType", source),
+            Some(TypeRef::Int64)
+        );
+    }
 }

@@ -370,7 +370,7 @@
     "type": {
       "patterns": [
         {
-          "match": "(bool|float|int|char|any|void)|(\\w+)",
+          "match": "(bool|float|int64|int|char|any|void)|(\\w+)",
           "captures": {
             "1": {
               "name": "storage.type.built-in.primitive.sourcepawn"

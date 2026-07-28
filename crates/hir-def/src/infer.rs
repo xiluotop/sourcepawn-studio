@@ -305,6 +305,7 @@ impl InferenceContext<'_> {
             Expr::Literal(lit) => {
                 let ty = match lit {
                     Literal::Int(_) => TypeRef::Int,
+                    Literal::Int64(_) => TypeRef::Int64,
                     Literal::Bool(_) => TypeRef::Bool,
                     Literal::Float(_) => TypeRef::Float,
                     Literal::Char(_) => TypeRef::Char,

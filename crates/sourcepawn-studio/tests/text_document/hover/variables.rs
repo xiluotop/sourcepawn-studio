@@ -12,3 +12,15 @@ public const int MaxClients;   /**< Maximum number of players the server support
 "#,
     ));
 }
+
+#[test]
+fn int64_global() {
+    assert_json_snapshot!(hover(
+        r#"
+%! main.sp
+int64 largeValue = 2147483648;
+        |
+        ^
+"#,
+    ));
+}

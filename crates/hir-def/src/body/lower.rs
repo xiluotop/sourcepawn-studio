@@ -407,9 +407,8 @@ impl ExprCollector<'_> {
             TSKind::this => Some(self.alloc_expr(Expr::This, NodePtr::from(&expr))),
             TSKind::int_literal => {
                 let text = expr.utf8_text(self.source.as_bytes()).unwrap();
-                // FIXME: The unwrap_or_default() is a workaround for hex literals
-                let int = text.parse().unwrap_or_default();
-                Some(self.alloc_expr(Expr::Literal(Literal::Int(int)), NodePtr::from(&expr)))
+                let literal = lower_integer_literal(text);
+                Some(self.alloc_expr(Expr::Literal(literal), NodePtr::from(&expr)))
             }
             TSKind::float_literal => {
                 let text = expr.utf8_text(self.source.as_bytes()).unwrap();
@@ -513,5 +512,59 @@ impl ExprCollector<'_> {
         self.source_map.expr_map_back.insert(id, ptr);
         self.source_map.expr_map.insert(ptr, id);
         id
+    }
+}
+
+fn lower_integer_literal(text: &str) -> Literal {
+    let normalized = text.replace('_', "");
+    let (digits, radix, decimal) = if let Some(digits) = normalized.strip_prefix("0x") {
+        (digits, 16, false)
+    } else if let Some(digits) = normalized.strip_prefix("0b") {
+        (digits, 2, false)
+    } else if let Some(digits) = normalized.strip_prefix("0o") {
+        (digits, 8, false)
+    } else {
+        (normalized.as_str(), 10, true)
+    };
+
+    let value = u64::from_str_radix(digits, radix).unwrap_or_default();
+    // Match spcomp 1.13: decimal literals outside the signed 32-bit range and
+    // non-decimal literals outside the unsigned 32-bit range are int64.
+    let is_int64 = if decimal {
+        value > i32::MAX as u64
+    } else {
+        value > u32::MAX as u64
+    };
+
+    if is_int64 {
+        Literal::Int64(value as i64)
+    } else {
+        Literal::Int(value as i64)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::lower_integer_literal;
+    use crate::hir::Literal;
+
+    #[test]
+    fn lowers_integer_literals_using_sourcepawn_1_13_width_rules() {
+        assert_eq!(
+            lower_integer_literal("2147483647"),
+            Literal::Int(2147483647)
+        );
+        assert_eq!(
+            lower_integer_literal("2147483648"),
+            Literal::Int64(2147483648)
+        );
+        assert_eq!(
+            lower_integer_literal("0xffffffff"),
+            Literal::Int(4294967295)
+        );
+        assert_eq!(
+            lower_integer_literal("0x1_0000_0000"),
+            Literal::Int64(4294967296)
+        );
     }
 }

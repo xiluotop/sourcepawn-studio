@@ -10,7 +10,7 @@ use super::item::CompletionKind;
 const DEFAULT_LITERAL: &[&str] = &["true", "false", "null"];
 
 const DEFAULT_KEYWORD: &[&str] = &[
-    "any", "bool", "char", "float", "Float", "int", "String", "const", "static",
+    "any", "bool", "char", "float", "Float", "int", "int64", "String", "const", "static",
 ];
 
 const DEFAULT_GLOBAL_KEYWORDS: &[&str] = &["stock", "public", "forward", "native", "void"];
