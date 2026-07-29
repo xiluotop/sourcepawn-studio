@@ -7,3 +7,4 @@ crates/*/target
 *.log
 *.iml
 .DS_Store
+artifacts
